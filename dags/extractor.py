@@ -5,6 +5,8 @@ from include.datasets import DATASET_COCKTAIL
 from include.tasks import _get_cocktail, _check_size, _validate_json_fields
 from include.extractor.callbacks import _handle_empty_size, _handle_failed_dag_run
 import json
+#import airflow.utils.trigger_rule as trigger_rule
+from airflow.utils.trigger_rule import TriggerRule
 
 @dag(
     start_date=datetime(2025, 1, 1),
@@ -60,7 +62,16 @@ def extractor():
     def non_alcoholic_drink():
         print("This is a non-alcoholic drink.")
 
-    get_cocktail >> checks() >> branch_cocktail_type() >> [alcoholic_drink(), non_alcoholic_drink()]
+    @task(trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS)
+    def clean_data():
+        import os
+        if os.path.exists(DATASET_COCKTAIL.uri):
+            os.remove(DATASET_COCKTAIL.uri)
+            print(f"Removed file: {DATASET_COCKTAIL.uri}")
+        else:
+            print(f"File not found, nothing to remove: {DATASET_COCKTAIL.uri}")
+
+    get_cocktail >> checks() >> branch_cocktail_type() >> [alcoholic_drink(), non_alcoholic_drink()] >> clean_data()
     
 my_extractor = extractor()
 
