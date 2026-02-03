@@ -3,8 +3,10 @@ from airflow.exceptions import AirflowFailException
 
 def _get_cocktail(ti=None):
     import requests
+    from airflow.models import Variable
     
-    api = "https://www.thecocktaildb.com/api/json/v1/1/random.php"
+    #api = "https://www.thecocktaildb.com/api/json/v1/1/random.php"
+    api = Variable.get('api')
     response = requests.get(api)
     with open(DATASET_COCKTAIL.uri, "wb") as f:
         f.write(response.content)
